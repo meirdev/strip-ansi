@@ -115,4 +115,11 @@ mod tests {
         let expected = "Hello, \x1b[123";
         assert_eq!(strip_ansi(s), expected);
     }
+
+    #[test]
+    fn test_minimum_csi() {
+        let s = "Hello\x1b[m";
+        let expected = "Hello";
+        assert_eq!(strip_ansi(s), expected);
+    }
 }
