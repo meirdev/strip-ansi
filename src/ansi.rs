@@ -9,7 +9,7 @@ const INTERMEDIATE_BYTE: RangeInclusive<u8> = 0x20..=0x2F; // !"#$%&'()*+,-./
 
 const FINAL_BYTE: RangeInclusive<u8> = 0x40..=0x7E; // @A–Z[\]^_`a–z{|}~
 
-const MIN_CSI_LENGTH: usize = 4;
+const MIN_CSI_LENGTH: usize = 3;
 
 fn is_parameter_byte(b: &u8) -> bool {
     PARAMETER_BYTE.contains(b)
