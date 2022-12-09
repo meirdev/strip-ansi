@@ -9,54 +9,46 @@ const INTERMEDIATE_BYTE: RangeInclusive<u8> = 0x20..=0x2F; // !"#$%&'()*+,-./
 
 const FINAL_BYTE: RangeInclusive<u8> = 0x40..=0x7E; // @A–Z[\]^_`a–z{|}~
 
-const MIN_CSI_LENGTH: usize = 3;
-
+#[inline]
 fn is_parameter_byte(b: &u8) -> bool {
     PARAMETER_BYTE.contains(b)
 }
 
+#[inline]
 fn is_intermediate_byte(b: &u8) -> bool {
     INTERMEDIATE_BYTE.contains(b)
 }
 
+#[inline]
 fn is_final_byte(b: &u8) -> bool {
     FINAL_BYTE.contains(b)
-}
-
-macro_rules! check {
-    ($function:ident, $s:ident, $i:ident) => {
-        $i < $s.len() && $function(&$s[$i])
-    };
 }
 
 fn find_csi_sequence(s: &[u8]) -> Result<Option<RangeInclusive<usize>>, ()> {
     // println!("bytes: {:?}", s);
 
-    let mut i = 0;
-    while s.len() >= MIN_CSI_LENGTH && i <= s.len() - MIN_CSI_LENGTH {
-        if &s[i..i + 2] == CSI {
-            let j = i;
-            i += 2;
+    let result = s.windows(CSI.len())
+        .enumerate()
+        .find(|(_, chunk)| *chunk == CSI)
+        .map(|(i, _)| {
+            let end_csi = i + CSI.len();
+            let buffer = &s[end_csi..];
 
-            while check!(is_parameter_byte, s, i) {
-                i += 1;
+            if let Some((j, _)) = buffer
+                .iter()
+                .enumerate()
+                .skip_while(|(_, x)| is_parameter_byte(x))
+                .skip_while(|(_, x)| is_intermediate_byte(x))
+                .next()
+                .filter(|(_, x)| is_final_byte(x))
+            {
+                return Ok(Some(i..=end_csi + j));
+            } else {
+                return Err(());
             }
+        });
 
-            while check!(is_intermediate_byte, s, i) {
-                i += 1;
-            }
-
-            if check!(is_final_byte, s, i) {
-                return Ok(Some(j..=i));
-            }
-
-            return Err(());
-        }
-
-        i += 1;
-    }
-
-    return Ok(None);
+    return result.unwrap_or(Ok(None));
 }
 
 pub fn strip_ansi(s: &str) -> String {
